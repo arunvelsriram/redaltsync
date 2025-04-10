@@ -314,6 +314,10 @@ function syncSelectedSubreddits() {
     const syncProgress = document.getElementById('sync-progress');
     const syncMessage = document.getElementById('sync-message');
     
+    // Reset progress bar color to default (reddit orange)
+    syncProgress.classList.remove('bg-danger', 'bg-warning');
+    syncProgress.classList.add('bg-reddit');
+    
     syncButton.disabled = true;
     syncStatus.classList.remove('d-none');
     syncProgress.style.width = '0%';
