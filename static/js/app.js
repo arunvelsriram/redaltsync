@@ -418,6 +418,9 @@ function syncSelectedSubreddits() {
 
 // Check for existing tokens on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Set current year in footer
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+
     // Check for existing tokens
     ['source', 'target'].forEach(account => {
         const token = localStorage.getItem(`reddit_${account}_token`);
