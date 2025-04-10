@@ -59,7 +59,7 @@ func main() {
 	})
 
 	// Serve static files
-	app.Static("/", "./public")
+	app.Static("/static", "./static")
 
 	// Health check endpoint
 	app.Get("/health", func(c *fiber.Ctx) error {
@@ -93,7 +93,7 @@ func main() {
 
 		// Construct the OAuth URL
 		authURL := fmt.Sprintf(
-			"https://www.reddit.com/api/v1/authorize?client_id=%s&response_type=code&state=%s&redirect_uri=%s&duration=permanent&scope=mysubreddits",
+			"https://www.reddit.com/api/v1/authorize?client_id=%s&response_type=code&state=%s&redirect_uri=%s&duration=permanent&scope=identity,mysubreddits",
 			clientID,
 			state,
 			redirectURI,
@@ -106,35 +106,36 @@ func main() {
 	app.Get("/auth/callback", func(c *fiber.Ctx) error {
 		code := c.Query("code")
 		state := c.Query("state")
-		error := c.Query("error")
+		accountType := "source"
+		if state == "target_account" {
+			accountType = "target"
+		}
 
 		// Check for OAuth errors
-		if error != "" {
-			return c.Status(400).SendString(fmt.Sprintf("OAuth error: %s", error))
+		if err := c.Query("error"); err != "" {
+			log.Printf("OAuth error: %s", err)
+			return c.Render("auth-result", fiber.Map{
+				"Error":        true,
+				"ErrorMessage": fmt.Sprintf("Authentication failed: %s", err),
+			})
 		}
 
-		if code == "" {
-			return c.Status(400).SendString("Authorization code not provided")
-		}
-
-		// Exchange the code for an access token
+		// Exchange the code for a token
 		token, err := getRedditToken(code)
 		if err != nil {
-			return c.Status(500).SendString(fmt.Sprintf("Error getting token: %v", err))
+			log.Printf("Error getting token: %v", err)
+			return c.Render("auth-result", fiber.Map{
+				"Error":        true,
+				"ErrorMessage": "Failed to get access token. Please try again.",
+			})
 		}
 
-		// Store the token based on the state parameter
-		if state == "source_account" {
-			// TODO: Store the source account token securely
-			log.Printf("Source account token: %s", token)
-			return c.SendString("Source account connected successfully!")
-		} else if state == "target_account" {
-			// TODO: Store the target account token securely
-			log.Printf("Target account token: %s", token)
-			return c.SendString("Target account connected successfully!")
-		}
-
-		return c.SendString("Authentication successful!")
+		// Render the success state
+		return c.Render("auth-result", fiber.Map{
+			"Error":       false,
+			"AccountType": accountType,
+			"Token":       token,
+		})
 	})
 
 	// Get port from environment or use default
