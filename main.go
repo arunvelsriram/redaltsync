@@ -132,7 +132,7 @@ func main() {
 		// Check for OAuth errors
 		if err := c.Query("error"); err != "" {
 			log.Printf("OAuth error: %s", err)
-			return c.Render("auth-result", fiber.Map{
+			return c.Render("templates/auth-result", fiber.Map{
 				"Error":        true,
 				"ErrorMessage": fmt.Sprintf("Authentication failed: %s", err),
 			})
@@ -142,14 +142,14 @@ func main() {
 		token, err := getRedditToken(code)
 		if err != nil {
 			log.Printf("Error getting token: %v", err)
-			return c.Render("auth-result", fiber.Map{
+			return c.Render("templates/auth-result", fiber.Map{
 				"Error":        true,
 				"ErrorMessage": "Failed to get access token. Please try again.",
 			})
 		}
 
 		// Render the success state
-		return c.Render("auth-result", fiber.Map{
+		return c.Render("templates/auth-result", fiber.Map{
 			"Error":       false,
 			"AccountType": accountType,
 			"Token":       token,
