@@ -2,6 +2,8 @@
 
 A web application that helps synchronize subreddit subscriptions between Reddit accounts.
 
+🛠️ Built with Cursor AI, guided by vibes!
+
 ## Features
 
 - OAuth2 authentication with Reddit
@@ -38,12 +40,6 @@ REDDIT_REDIRECT_URI=http://localhost:3000/auth/callback
 
 ## Installation
 
-1. Clone the repository
-2. Install dependencies:
-```bash
-go mod download
-```
-
 ## Running the Application
 
 To start the server, run:
@@ -51,22 +47,10 @@ To start the server, run:
 go run main.go
 ```
 
-The server will start on `http://localhost:3000`
-
-## Endpoints
-
-- `GET /` - Home page
-- `GET /health` - Health check endpoint (returns JSON)
-- `GET /auth/source` - Initiates OAuth flow for source Reddit account
-- `GET /auth/callback` - OAuth callback endpoint
-
-## Project Structure
-
+To start the server with live reload, run:
+```bash
+go install github.com/air-verse/air@latest
+air
 ```
-.
-├── main.go           # Main application file
-├── go.mod           # Go module file
-├── templates/       # HTML templates
-│   └── index.html   # Home page template
-└── public/          # Static files (if any)
-``` 
+
+The server will start on `http://localhost:3000`
