@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -11,10 +12,17 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/static"
 	"github.com/gofiber/template/html/v2"
 	"github.com/joho/godotenv"
 )
+
+//go:embed templates/*
+var templateFS embed.FS
+
+//go:embed static/*
+var staticFS embed.FS
 
 type HealthResponse struct {
 	Status string `json:"status"`
@@ -50,8 +58,8 @@ func init() {
 }
 
 func main() {
-	// Initialize template engine
-	engine := html.New("./templates", ".html")
+	// Initialize template engine with embedded templates
+	engine := html.NewFileSystem(http.FS(templateFS), ".html")
 
 	// Create new Fiber app
 	app := fiber.New(fiber.Config{
@@ -59,24 +67,27 @@ func main() {
 	})
 
 	// Serve static files
-	app.Static("/static", "./static")
+	app.Get("/static/*", static.New("/static", static.Config{
+		FS:     staticFS,
+		Browse: true,
+	}))
 
 	// Health check endpoint
-	app.Get("/health", func(c *fiber.Ctx) error {
+	app.Get("/health", func(c fiber.Ctx) error {
 		return c.JSON(HealthResponse{
 			Status: "healthy",
 		})
 	})
 
 	// Home page endpoint
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Render("index", fiber.Map{
+	app.Get("/", func(c fiber.Ctx) error {
+		return c.Render("templates/index", fiber.Map{
 			"Title": "Welcome to RedAltSync",
 		})
 	})
 
 	// OAuth endpoint for both source and target accounts
-	app.Get("/auth", func(c *fiber.Ctx) error {
+	app.Get("/auth", func(c fiber.Ctx) error {
 		if clientID == "" {
 			return c.Status(500).SendString("Reddit client ID not configured")
 		}
@@ -106,11 +117,11 @@ func main() {
 			scopes,
 		)
 
-		return c.Redirect(authURL)
+		return c.Redirect().To(authURL)
 	})
 
 	// OAuth callback endpoint
-	app.Get("/auth/callback", func(c *fiber.Ctx) error {
+	app.Get("/auth/callback", func(c fiber.Ctx) error {
 		code := c.Query("code")
 		state := c.Query("state")
 		accountType := "source"
