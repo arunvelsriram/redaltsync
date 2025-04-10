@@ -91,12 +91,19 @@ func main() {
 			state = "target_account"
 		}
 
+		// Determine scopes based on account type
+		scopes := "identity,mysubreddits"
+		if account == "target" {
+			scopes += ",subscribe"
+		}
+
 		// Construct the OAuth URL
 		authURL := fmt.Sprintf(
-			"https://www.reddit.com/api/v1/authorize?client_id=%s&response_type=code&state=%s&redirect_uri=%s&duration=permanent&scope=identity,mysubreddits",
+			"https://www.reddit.com/api/v1/authorize?client_id=%s&response_type=code&state=%s&redirect_uri=%s&duration=permanent&scope=%s",
 			clientID,
 			state,
 			redirectURI,
+			scopes,
 		)
 
 		return c.Redirect(authURL)

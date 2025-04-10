@@ -61,12 +61,18 @@ function fetchUser(account, token, shouldStoreToken = false) {
         
         // After successful user fetch, fetch subreddits
         fetchSubreddits(account, token);
+        
+        // Update sync button state after connecting an account
+        updateSyncButtonState();
     })
     .catch(error => {
         // If there's an error, show the error message
         updateAccountStatus(account, { 
             error: `Connection failed: ${error.message || 'Unknown error'}` 
         });
+        
+        // Update sync button state even if there's an error
+        updateSyncButtonState();
     });
 }
 
@@ -124,6 +130,8 @@ function fetchSubreddits(account, token) {
             } else {
                 // Display all subreddits when done
                 displaySubreddits(account, allSubreddits);
+                // Update sync button state after displaying subreddits
+                updateSyncButtonState();
             }
         });
     }
@@ -136,6 +144,8 @@ function fetchSubreddits(account, token) {
                 Failed to load subreddits: ${error.message || 'Unknown error'}
             </div>
         `;
+        // Update sync button state even if there's an error
+        updateSyncButtonState();
     });
 }
 
@@ -148,6 +158,8 @@ function displaySubreddits(account, subreddits) {
     
     if (subreddits.length === 0) {
         subredditList.innerHTML = '<div class="text-center text-muted">No subreddits found</div>';
+        // Update sync button state when there are no subreddits
+        updateSyncButtonState();
         return;
     }
     
@@ -217,9 +229,15 @@ function displaySubreddits(account, subreddits) {
                 
                 // Update selected count
                 selectedCountElement.textContent = `${selectedCount} selected`;
+                
+                // Update sync button state
+                updateSyncButtonState();
             });
         });
     }
+    
+    // Update sync button state after setting up event listeners
+    updateSyncButtonState();
 }
 
 // Add a function to get selected subreddits
@@ -234,6 +252,168 @@ function getSelectedSubreddits() {
     });
     
     return selectedSubreddits;
+}
+
+// Function to update sync button state based on selected subreddits
+function updateSyncButtonState() {
+    const syncButton = document.getElementById('sync-subreddits');
+    const sourceToken = localStorage.getItem('reddit_source_token');
+    const targetToken = localStorage.getItem('reddit_target_token');
+    
+    if (syncButton) {
+        // Check if source account is connected
+        const sourceConnected = sourceToken !== null;
+        // Check if target account is connected
+        const targetConnected = targetToken !== null;
+        
+        // Count selected subreddits
+        const selectedCount = document.querySelectorAll('#source-subreddit-list .subreddit-checkbox:checked').length;
+        
+        // Enable button if both accounts are connected and at least one subreddit is selected
+        syncButton.disabled = selectedCount === 0 || !sourceConnected || !targetConnected;
+        
+        // Add a tooltip to explain why the button is disabled
+        if (syncButton.disabled) {
+            if (!sourceConnected) {
+                syncButton.title = "Connect a source account to enable syncing";
+            } else if (!targetConnected) {
+                syncButton.title = "Connect a target account to enable syncing";
+            } else if (selectedCount === 0) {
+                syncButton.title = "Select at least one subreddit to sync";
+            } else {
+                syncButton.title = "";
+            }
+        } else {
+            syncButton.title = `Sync ${selectedCount} selected subreddit${selectedCount !== 1 ? 's' : ''} to target account`;
+        }
+        
+        // Log the state for debugging
+        console.log('Sync button state updated:', {
+            sourceConnected,
+            targetConnected,
+            selectedCount,
+            buttonEnabled: !syncButton.disabled
+        });
+    }
+}
+
+// Function to sync selected subreddits to target account
+function syncSelectedSubreddits() {
+    const sourceToken = localStorage.getItem('reddit_source_token');
+    const targetToken = localStorage.getItem('reddit_target_token');
+    const selectedSubreddits = getSelectedSubreddits();
+    
+    if (selectedSubreddits.length === 0) {
+        alert('Please select at least one subreddit to sync.');
+        return;
+    }
+    
+    // Show sync status
+    const syncButton = document.getElementById('sync-subreddits');
+    const syncStatus = document.getElementById('sync-status');
+    const syncProgress = document.getElementById('sync-progress');
+    const syncMessage = document.getElementById('sync-message');
+    
+    syncButton.disabled = true;
+    syncStatus.classList.remove('d-none');
+    syncProgress.style.width = '0%';
+    syncMessage.textContent = 'Preparing to sync...';
+    
+    // Get current target subreddits to avoid subscribing to already subscribed ones
+    fetch('https://oauth.reddit.com/subreddits/mine/subscriber?limit=100', {
+        headers: {
+            'Authorization': `Bearer ${targetToken}`,
+            'User-Agent': 'RedAltSync/1.0'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        const currentSubreddits = data.data.children.map(sub => sub.data.display_name);
+        const subredditsToSubscribe = selectedSubreddits.filter(sub => !currentSubreddits.includes(sub));
+        
+        if (subredditsToSubscribe.length === 0) {
+            syncMessage.textContent = 'All selected subreddits are already subscribed.';
+            syncProgress.style.width = '100%';
+            syncButton.disabled = false;
+            return;
+        }
+        
+        syncMessage.textContent = `Subscribing to ${subredditsToSubscribe.length} subreddits...`;
+        
+        // Subscribe to each subreddit
+        let completed = 0;
+        let failed = 0;
+        const total = subredditsToSubscribe.length;
+        
+        return new Promise((resolve, reject) => {
+            subredditsToSubscribe.forEach((subreddit, index) => {
+                // Add a small delay between requests to avoid rate limiting
+                setTimeout(() => {
+                    fetch(`https://oauth.reddit.com/api/subscribe`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${targetToken}`,
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'User-Agent': 'RedAltSync/1.0'
+                        },
+                        body: `sr_name=${subreddit}&action=sub`
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error(`Failed to subscribe to r/${subreddit}: ${response.status}`);
+                            failed++;
+                            syncMessage.textContent = `Error: Failed to subscribe to r/${subreddit} (${response.status})`;
+                        }
+                        
+                        completed++;
+                        const progress = Math.round((completed / total) * 100);
+                        syncProgress.style.width = `${progress}%`;
+                        syncMessage.textContent = `Subscribing to subreddits... (${completed}/${total})${failed > 0 ? ` - ${failed} failed` : ''}`;
+                        
+                        if (completed === total) {
+                            resolve({ completed, failed, total });
+                        }
+                    })
+                    .catch(error => {
+                        console.error(`Error subscribing to r/${subreddit}:`, error);
+                        failed++;
+                        completed++;
+                        
+                        if (completed === total) {
+                            resolve({ completed, failed, total });
+                        }
+                    });
+                }, index * 500); // 500ms delay between requests
+            });
+        });
+    })
+    .then(result => {
+        if (result.failed > 0) {
+            syncMessage.textContent = `Sync completed with errors: ${result.failed} of ${result.total} subreddits failed to sync.`;
+            syncProgress.classList.remove('bg-reddit');
+            syncProgress.classList.add('bg-warning');
+        } else {
+            syncMessage.textContent = 'Sync completed successfully!';
+            syncProgress.classList.remove('bg-warning');
+            syncProgress.classList.add('bg-reddit');
+        }
+        syncButton.disabled = false;
+        
+        // Refresh target subreddits list
+        fetchSubreddits('target', localStorage.getItem('reddit_target_token'));
+    })
+    .catch(error => {
+        console.error('Error during sync:', error);
+        syncMessage.textContent = `Error: ${error.message || 'Unknown error occurred'}`;
+        syncProgress.classList.remove('bg-reddit');
+        syncProgress.classList.add('bg-danger');
+        syncButton.disabled = false;
+    });
 }
 
 // Check for existing tokens on page load
@@ -294,6 +474,25 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update selected count
             selectedCountElement.textContent = allSelected ? '0 selected' : `${checkboxes.length} selected`;
+            
+            // Update sync button state
+            updateSyncButtonState();
         });
     }
+    
+    // Add event listener for sync button
+    const syncButton = document.getElementById('sync-subreddits');
+    if (syncButton) {
+        syncButton.addEventListener('click', syncSelectedSubreddits);
+    }
+    
+    // Add event listener to update sync button state when checkboxes change
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('subreddit-checkbox')) {
+            updateSyncButtonState();
+        }
+    });
+    
+    // Initial update of sync button state
+    updateSyncButtonState();
 }); 

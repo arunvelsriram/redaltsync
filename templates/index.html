@@ -67,6 +67,7 @@
                             </div>
                         </div>
                     </div>
+                    
                     <!-- Target Account -->
                     <div class="col-md-6">
                         <div class="account-card">
@@ -84,6 +85,17 @@
                                         <h5 class="mb-0">Subscribed Subreddits</h5>
                                         <div class="subreddit-stats">
                                             <span id="target-total-count" class="badge bg-secondary">0 total</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <button id="sync-subreddits" class="btn btn-reddit" disabled>
+                                            <i class="fas fa-sync-alt me-2"></i>Sync Selected Subreddits
+                                        </button>
+                                        <div id="sync-status" class="mt-2 d-none">
+                                            <div class="progress" style="height: 8px;">
+                                                <div id="sync-progress" class="progress-bar bg-reddit" role="progressbar" style="width: 0%"></div>
+                                            </div>
+                                            <small id="sync-message" class="text-muted mt-2 d-block">Preparing to sync...</small>
                                         </div>
                                     </div>
                                     <div class="subreddit-list" id="target-subreddit-list">
