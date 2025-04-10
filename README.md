@@ -2,7 +2,7 @@
 
 A web application that helps synchronize subreddit subscriptions between Reddit accounts.
 
-🛠️ Built with Cursor AI, guided by vibes!
+🛠️ Built with [Cursor AI](https://cursor.sh), guided by vibes!
 
 ## Features
 
