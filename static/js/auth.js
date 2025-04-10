@@ -17,7 +17,7 @@ function openAuthPopup(accountType) {
         if (event.data.type === 'AUTH_SUCCESS') {
             const { account, token } = event.data;
             // Fetch user data first, then store token if successful
-            fetchUserDataAndUpdateStatus(account, token);
+            fetchUser(account, token, true);
             // Close the popup
             popup.close();
         }
@@ -39,7 +39,7 @@ function updateAccountStatus(type, data) {
     }
 }
 
-function fetchUserDataAndUpdateStatus(account, token) {
+function fetchUser(account, token, shouldStoreToken = false) {
     fetch('https://oauth.reddit.com/api/v1/me', {
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -53,6 +53,10 @@ function fetchUserDataAndUpdateStatus(account, token) {
         return response.json();
     })
     .then(data => {
+        // If we should store the token (after successful OAuth), store it now
+        if (shouldStoreToken) {
+            localStorage.setItem(`reddit_${account}_token`, token);
+        }
         updateAccountStatus(account, { username: data.name });
     })
     .catch(error => {
@@ -62,3 +66,37 @@ function fetchUserDataAndUpdateStatus(account, token) {
         });
     });
 }
+
+// Check for existing tokens on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for existing tokens
+    ['source', 'target'].forEach(account => {
+        const token = localStorage.getItem(`reddit_${account}_token`);
+        if (token) {
+            // Check if token is expired by decoding JWT
+            try {
+                const base64Url = token.split('.')[1];
+                const jsonPayload = JSON.parse(atob(base64Url));
+                
+                const expirationTime = jsonPayload.exp * 1000; // Convert to milliseconds
+                
+                if (Date.now() >= expirationTime) {
+                    // Token is expired, remove it
+                    localStorage.removeItem(`reddit_${account}_token`);
+                    updateAccountStatus(account, { 
+                        error: 'Token expired' 
+                    });
+                } else {
+                    // Token is still valid, fetch user data
+                    fetchUser(account, token);
+                }
+            } catch (error) {
+                // If token is invalid or can't be decoded, remove it
+                localStorage.removeItem(`reddit_${account}_token`);
+                updateAccountStatus(account, { 
+                    error: 'Invalid token format' 
+                });
+            }
+        }
+    });
+}); 
