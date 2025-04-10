@@ -95,6 +95,79 @@
             color: #dc3545;
             font-size: 14px;
         }
+        .subreddit-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .subreddit-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        .subreddit-item:hover {
+            background-color: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .subreddit-item.selected {
+            background-color: #ff4500;
+            border-color: #ff4500;
+            color: white;
+        }
+        .subreddit-item.selected:hover {
+            background-color: #e63e00;
+        }
+        .subreddit-item.readonly {
+            cursor: default;
+        }
+        .subreddit-item.readonly:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        .subreddit-checkbox {
+            margin-right: 8px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #ff4500;
+            position: relative;
+            top: 2px;
+            pointer-events: none; /* Prevent direct interaction with checkbox */
+        }
+        .subreddit-name {
+            font-weight: 500;
+            flex-grow: 1;
+        }
+        .subreddit-name a {
+            color: inherit;
+            text-decoration: none;
+            pointer-events: auto; /* Allow clicking on links */
+        }
+        .subreddit-item.selected .subreddit-name a {
+            color: white;
+        }
+        .subreddit-count {
+            display: none;
+        }
+        .subreddit-stats {
+            font-size: 0.9rem;
+        }
+        .badge.bg-reddit {
+            background-color: #ff4500;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/auth.js"></script>
@@ -132,6 +205,26 @@
                                 <button onclick="openAuthPopup('source')" class="btn btn-reddit">
                                     <i class="fab fa-reddit me-2"></i>Connect
                                 </button>
+                                <div id="source-subreddits" class="mt-4 d-none">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h5 class="mb-0">Subscribed Subreddits</h5>
+                                        <div class="subreddit-stats">
+                                            <span id="source-selected-count" class="badge bg-reddit me-2">0 selected</span>
+                                            <span id="source-total-count" class="badge bg-secondary">0 total</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <button id="source-toggle-all" class="btn btn-sm btn-reddit">Select All</button>
+                                    </div>
+                                    <div class="subreddit-list" id="source-subreddit-list">
+                                        <div class="text-center w-100">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <p class="mt-2">Loading subreddits...</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -147,6 +240,22 @@
                                 <button onclick="openAuthPopup('target')" class="btn btn-reddit">
                                     <i class="fab fa-reddit me-2"></i>Connect
                                 </button>
+                                <div id="target-subreddits" class="mt-4 d-none">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h5 class="mb-0">Subscribed Subreddits</h5>
+                                        <div class="subreddit-stats">
+                                            <span id="target-total-count" class="badge bg-secondary">0 total</span>
+                                        </div>
+                                    </div>
+                                    <div class="subreddit-list" id="target-subreddit-list">
+                                        <div class="text-center w-100">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <p class="mt-2">Loading subreddits...</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -6,6 +6,7 @@
 *.dylib
 redaltsync
 __debug_bin*
+tmp
 
 # Test binary, built with `go test -c`
 *.test
