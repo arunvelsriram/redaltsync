@@ -17,7 +17,7 @@ function openAuthPopup(accountType) {
         if (event.data.type === 'AUTH_SUCCESS') {
             const { account, token } = event.data;
             // Fetch user data first, then store token if successful
-            fetchUser(account, token, true);
+            fetchUser(account, token);
             // Close the popup
             popup.close();
         }
@@ -39,7 +39,7 @@ function updateAccountStatus(type, data) {
     }
 }
 
-function fetchUser(account, token, shouldStoreToken = false) {
+function fetchUser(account, token) {
     fetch('https://oauth.reddit.com/api/v1/me', {
         headers: {
             'Authorization': `Bearer ${token}`,
@@ -52,10 +52,8 @@ function fetchUser(account, token, shouldStoreToken = false) {
         return response.json();
     })
     .then(data => {
-        // If we should store the token (after successful OAuth), store it now
-        if (shouldStoreToken) {
-            localStorage.setItem(`reddit_${account}_token`, token);
-        }
+        localStorage.setItem(`reddit_${account}_token`, token);
+
         updateAccountStatus(account, { username: data.name });
         
         // After successful user fetch, fetch subreddits
@@ -66,9 +64,7 @@ function fetchUser(account, token, shouldStoreToken = false) {
     })
     .catch(error => {
         // If there's an error, show the error message
-        updateAccountStatus(account, { 
-            error: `Connection failed: ${error.message || 'Unknown error'}` 
-        });
+        updateAccountStatus(account, { error: `Connection failed: ${error.message || 'Unknown error'}` });
         
         // Update sync button state even if there's an error
         updateSyncButtonState();
@@ -414,9 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (Date.now() >= expirationTime) {
                     // Token is expired, remove it
                     localStorage.removeItem(`reddit_${account}_token`);
-                    updateAccountStatus(account, { 
-                        error: 'Token expired' 
-                    });
+                    updateAccountStatus(account, { error: 'Token expired' });
                 } else {
                     // Token is still valid, fetch user data
                     fetchUser(account, token);
@@ -424,9 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 // If token is invalid or can't be decoded, remove it
                 localStorage.removeItem(`reddit_${account}_token`);
-                updateAccountStatus(account, { 
-                    error: 'Invalid token format' 
-                });
+                updateAccountStatus(account, { error: 'Invalid token format' });
             }
         }
     });
