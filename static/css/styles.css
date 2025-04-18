@@ -195,10 +195,6 @@ footer {
     margin-top: 0.75rem;
 }
 
-#sync-progress {
-    transition: width 0.3s ease;
-}
-
 #sync-message {
     font-size: 0.8rem;
     margin-top: 0.5rem;

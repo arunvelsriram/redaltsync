@@ -309,16 +309,10 @@ function syncSelectedSubreddits() {
     // Show sync status
     const syncButton = document.getElementById('sync-subreddits');
     const syncStatus = document.getElementById('sync-status');
-    const syncProgress = document.getElementById('sync-progress');
     const syncMessage = document.getElementById('sync-message');
-    
-    // Reset progress bar color to default (reddit orange)
-    syncProgress.classList.remove('bg-danger', 'bg-warning');
-    syncProgress.classList.add('bg-reddit');
     
     syncButton.disabled = true;
     syncStatus.classList.remove('d-none');
-    syncProgress.style.width = '0%';
     syncMessage.textContent = 'Preparing to sync...';
     
     // Get current target subreddits to avoid subscribing to already subscribed ones
@@ -340,7 +334,6 @@ function syncSelectedSubreddits() {
         
         if (subredditsToSubscribe.length === 0) {
             syncMessage.textContent = 'All selected subreddits are already subscribed.';
-            syncProgress.style.width = '100%';
             syncButton.disabled = false;
             return;
         }
@@ -373,8 +366,6 @@ function syncSelectedSubreddits() {
                         }
                         
                         completed++;
-                        const progress = Math.round((completed / total) * 100);
-                        syncProgress.style.width = `${progress}%`;
                         syncMessage.textContent = `Subscribing to subreddits... (${completed}/${total})${failed > 0 ? ` - ${failed} failed` : ''}`;
                         
                         if (completed === total) {
@@ -397,12 +388,8 @@ function syncSelectedSubreddits() {
     .then(result => {
         if (result.failed > 0) {
             syncMessage.textContent = `Sync completed with errors: ${result.failed} of ${result.total} subreddits failed to sync.`;
-            syncProgress.classList.remove('bg-reddit');
-            syncProgress.classList.add('bg-warning');
         } else {
             syncMessage.textContent = 'Sync completed successfully!';
-            syncProgress.classList.remove('bg-warning');
-            syncProgress.classList.add('bg-reddit');
         }
         syncButton.disabled = false;
         
@@ -412,8 +399,6 @@ function syncSelectedSubreddits() {
     .catch(error => {
         console.error('Error during sync:', error);
         syncMessage.textContent = `Error: ${error.message || 'Unknown error occurred'}`;
-        syncProgress.classList.remove('bg-reddit');
-        syncProgress.classList.add('bg-danger');
         syncButton.disabled = false;
     });
 }
