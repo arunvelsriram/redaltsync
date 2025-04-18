@@ -258,41 +258,39 @@ function updateSyncButtonState() {
     const sourceToken = localStorage.getItem('reddit_source_token');
     const targetToken = localStorage.getItem('reddit_target_token');
     
-    if (syncButton) {
-        // Check if source account is connected
-        const sourceConnected = sourceToken !== null;
-        // Check if target account is connected
-        const targetConnected = targetToken !== null;
-        
-        // Count selected subreddits
-        const selectedCount = document.querySelectorAll('#source-subreddit-list .subreddit-checkbox:checked').length;
-        
-        // Enable button if both accounts are connected and at least one subreddit is selected
-        syncButton.disabled = selectedCount === 0 || !sourceConnected || !targetConnected;
-        
-        // Add a tooltip to explain why the button is disabled
-        if (syncButton.disabled) {
-            if (!sourceConnected) {
-                syncButton.title = "Connect a source account to enable syncing";
-            } else if (!targetConnected) {
-                syncButton.title = "Connect a target account to enable syncing";
-            } else if (selectedCount === 0) {
-                syncButton.title = "Select at least one subreddit to sync";
-            } else {
-                syncButton.title = "";
-            }
+    // Check if source account is connected
+    const sourceConnected = sourceToken !== null;
+    // Check if target account is connected
+    const targetConnected = targetToken !== null;
+
+    // Count selected subreddits
+    const selectedCount = document.querySelectorAll('#source-subreddit-list .subreddit-checkbox:checked').length;
+
+    // Enable button if both accounts are connected and at least one subreddit is selected
+    syncButton.disabled = selectedCount === 0 || !sourceConnected || !targetConnected;
+
+    // Add a tooltip to explain why the button is disabled
+    if (syncButton.disabled) {
+        if (!sourceConnected) {
+            syncButton.title = "Connect a source account to enable syncing";
+        } else if (!targetConnected) {
+            syncButton.title = "Connect a target account to enable syncing";
+        } else if (selectedCount === 0) {
+            syncButton.title = "Select at least one subreddit to sync";
         } else {
-            syncButton.title = `Sync ${selectedCount} selected subreddit${selectedCount !== 1 ? 's' : ''} to target account`;
+            syncButton.title = "";
         }
-        
-        // Log the state for debugging
-        console.log('Sync button state updated:', {
-            sourceConnected,
-            targetConnected,
-            selectedCount,
-            buttonEnabled: !syncButton.disabled
-        });
+    } else {
+        syncButton.title = `Sync ${selectedCount} selected subreddit${selectedCount !== 1 ? 's' : ''} to target account`;
     }
+
+    // Log the state for debugging
+    console.log('Sync button state updated:', {
+        sourceConnected,
+        targetConnected,
+        selectedCount,
+        buttonEnabled: !syncButton.disabled
+    });
 }
 
 // Function to sync selected subreddits to target account
@@ -432,40 +430,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listeners for Select All and Deselect All buttons
     const toggleAllBtn = document.getElementById('source-toggle-all');
-    
-    if (toggleAllBtn) {
-        toggleAllBtn.addEventListener('click', function() {
-            const checkboxes = document.querySelectorAll('#source-subreddit-list .subreddit-checkbox');
-            const selectedCountElement = document.getElementById('source-selected-count');
-            const allSelected = Array.from(checkboxes).every(checkbox => checkbox.checked);
+    toggleAllBtn.addEventListener('click', function() {
+        const checkboxes = document.querySelectorAll('#source-subreddit-list .subreddit-checkbox');
+        const selectedCountElement = document.getElementById('source-selected-count');
+        const allSelected = Array.from(checkboxes).every(checkbox => checkbox.checked);
+
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = !allSelected;
+            const subredditItem = checkbox.closest('.subreddit-item');
             
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = !allSelected;
-                const subredditItem = checkbox.closest('.subreddit-item');
-                
-                if (!allSelected) {
-                    subredditItem.classList.add('selected');
-                } else {
-                    subredditItem.classList.remove('selected');
-                }
-            });
-            
-            // Update button text
-            this.textContent = allSelected ? 'Select All' : 'Deselect All';
-            
-            // Update selected count
-            selectedCountElement.textContent = allSelected ? '0 selected' : `${checkboxes.length} selected`;
-            
-            // Update sync button state
-            updateSyncButtonState();
+            if (!allSelected) {
+                subredditItem.classList.add('selected');
+            } else {
+                subredditItem.classList.remove('selected');
+            }
         });
-    }
+
+        // Update button text
+        this.textContent = allSelected ? 'Select All' : 'Deselect All';
+
+        // Update selected count
+        selectedCountElement.textContent = allSelected ? '0 selected' : `${checkboxes.length} selected`;
+
+        // Update sync button state
+        updateSyncButtonState();
+    });
+
     
     // Add event listener for sync button
     const syncButton = document.getElementById('sync-subreddits');
-    if (syncButton) {
-        syncButton.addEventListener('click', syncSelectedSubreddits);
-    }
+    syncButton.addEventListener('click', syncSelectedSubreddits);
     
     // Add event listener to update sync button state when checkboxes change
     document.addEventListener('change', function(e) {
