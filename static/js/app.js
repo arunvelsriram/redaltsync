@@ -315,74 +315,49 @@ function syncSelectedSubreddits() {
     syncStatus.classList.remove('d-none');
     syncMessage.textContent = 'Preparing to sync...';
     
-    // Get current target subreddits to avoid subscribing to already subscribed ones
-    fetch('https://oauth.reddit.com/subreddits/mine/subscriber?limit=100', {
-        headers: {
-            'Authorization': `Bearer ${targetToken}`,
+    // Subscribe to each subreddit
+    let completed = 0;
+    let failed = 0;
+    const total = selectedSubreddits.length;
 
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        const currentSubreddits = data.data.children.map(sub => sub.data.display_name);
-        const subredditsToSubscribe = selectedSubreddits.filter(sub => !currentSubreddits.includes(sub));
-        
-        if (subredditsToSubscribe.length === 0) {
-            syncMessage.textContent = 'All selected subreddits are already subscribed.';
-            syncButton.disabled = false;
-            return;
-        }
-        
-        syncMessage.textContent = `Subscribing to ${subredditsToSubscribe.length} subreddits...`;
-        
-        // Subscribe to each subreddit
-        let completed = 0;
-        let failed = 0;
-        const total = subredditsToSubscribe.length;
-        
-        return new Promise((resolve, reject) => {
-            subredditsToSubscribe.forEach((subreddit, index) => {
-                // Add a small delay between requests to avoid rate limiting
-                setTimeout(() => {
-                    fetch(`https://oauth.reddit.com/api/subscribe`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${targetToken}`,
-                            'Content-Type': 'application/x-www-form-urlencoded',
+    syncMessage.textContent = `Subscribing to ${total} subreddits...`;
 
-                        },
-                        body: `sr_name=${subreddit}&action=sub`
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            console.error(`Failed to subscribe to r/${subreddit}: ${response.status}`);
-                            failed++;
-                            syncMessage.textContent = `Error: Failed to subscribe to r/${subreddit} (${response.status})`;
-                        }
-                        
-                        completed++;
-                        syncMessage.textContent = `Subscribing to subreddits... (${completed}/${total})${failed > 0 ? ` - ${failed} failed` : ''}`;
-                        
-                        if (completed === total) {
-                            resolve({ completed, failed, total });
-                        }
-                    })
-                    .catch(error => {
-                        console.error(`Error subscribing to r/${subreddit}:`, error);
+    return new Promise((resolve, reject) => {
+        selectedSubreddits.forEach((subreddit, index) => {
+            // Add a small delay between requests to avoid rate limiting
+            setTimeout(() => {
+                fetch(`https://oauth.reddit.com/api/subscribe`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${targetToken}`,
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `sr_name=${subreddit}&action=sub`
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        console.error(`Failed to subscribe to r/${subreddit}: ${response.status}`);
                         failed++;
-                        completed++;
-                        
-                        if (completed === total) {
-                            resolve({ completed, failed, total });
-                        }
-                    });
-                }, index * 500); // 500ms delay between requests
-            });
+                        syncMessage.textContent = `Error: Failed to subscribe to r/${subreddit} (${response.status})`;
+                    }
+
+                    completed++;
+                    syncMessage.textContent = `Subscribing to subreddits... (${completed}/${total})${failed > 0 ? ` - ${failed} failed` : ''}`;
+
+                    if (completed === total) {
+                        resolve({ completed, failed, total });
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error subscribing to r/${subreddit}:`, error);
+                    failed++;
+                    completed++;
+
+                    if (completed === total) {
+                        resolve({ completed, failed, total });
+                    }
+                });
+            }, index * 500); // 500ms delay between requests
         });
     })
     .then(result => {
