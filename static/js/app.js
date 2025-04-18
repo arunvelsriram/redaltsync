@@ -43,7 +43,6 @@ function fetchUser(account, token, shouldStoreToken = false) {
     fetch('https://oauth.reddit.com/api/v1/me', {
         headers: {
             'Authorization': `Bearer ${token}`,
-            'User-Agent': 'RedAltSync/1.0'
         }
     })
     .then(response => {
@@ -107,7 +106,6 @@ function fetchSubreddits(account, token) {
         return fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'User-Agent': 'RedAltSync/1.0'
             }
         })
         .then(response => {
@@ -327,7 +325,7 @@ function syncSelectedSubreddits() {
     fetch('https://oauth.reddit.com/subreddits/mine/subscriber?limit=100', {
         headers: {
             'Authorization': `Bearer ${targetToken}`,
-            'User-Agent': 'RedAltSync/1.0'
+
         }
     })
     .then(response => {
@@ -363,7 +361,7 @@ function syncSelectedSubreddits() {
                         headers: {
                             'Authorization': `Bearer ${targetToken}`,
                             'Content-Type': 'application/x-www-form-urlencoded',
-                            'User-Agent': 'RedAltSync/1.0'
+
                         },
                         body: `sr_name=${subreddit}&action=sub`
                     })
