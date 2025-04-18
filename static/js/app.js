@@ -368,6 +368,22 @@ function syncSelectedSubreddits() {
         }
         syncButton.disabled = false;
         
+        // Deselect all subreddits after sync
+        const checkboxes = document.querySelectorAll('#source-subreddit-list .subreddit-checkbox');
+        const selectedCountElement = document.getElementById('source-selected-count');
+
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+            const subredditItem = checkbox.closest('.subreddit-item');
+            subredditItem.classList.remove('selected');
+        });
+
+        // Update selected count
+        selectedCountElement.textContent = '0 selected';
+
+        // Update sync button state
+        updateSyncButtonState();
+
         // Refresh target subreddits list
         fetchSubreddits('target', localStorage.getItem('reddit_target_token'));
     })
