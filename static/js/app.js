@@ -188,47 +188,45 @@ function displaySubreddits(account, subreddits) {
     
     subredditList.innerHTML = subredditHTML;
     
-    // Add event listeners for selectable subreddits
-    if (account === 'source') {
-        const selectedCountElement = document.getElementById('source-selected-count');
-        let selectedCount = 0;
-        
-        // Add click event to each subreddit item
-        const subredditItems = subredditList.querySelectorAll('.subreddit-item');
-        subredditItems.forEach(item => {
-            // Prevent checkbox from being clicked directly
-            const checkbox = item.querySelector('.subreddit-checkbox');
-            checkbox.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
-            });
-            
-            // Handle clicks on the subreddit item
-            item.addEventListener('click', function(e) {
-                // Don't toggle if clicking on the link
-                if (e.target.classList.contains('subreddit-link')) return;
-                
-                // Toggle the checkbox
-                checkbox.checked = !checkbox.checked;
-                
-                // Update the selected class
-                if (checkbox.checked) {
-                    this.classList.add('selected');
-                    selectedCount++;
-                } else {
-                    this.classList.remove('selected');
-                    selectedCount--;
-                }
-                
-                // Update selected count
-                selectedCountElement.textContent = `${selectedCount} selected`;
-                
-                // Update sync button state
-                updateSyncButtonState();
-            });
+    // Add event listeners for non-readonly subreddits
+    const subredditItems = subredditList.querySelectorAll('.subreddit-item:not(.readonly)');
+    subredditItems.forEach(item => {
+        // Prevent checkbox from being clicked directly
+        const checkbox = item.querySelector('.subreddit-checkbox');
+        checkbox.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
         });
-    }
+        
+        // Handle clicks on the subreddit item
+        item.addEventListener('click', function(e) {
+            // Don't toggle if clicking on the link
+            if (e.target.classList.contains('subreddit-link')) return;
+            
+            // Get the selected count element
+            const selectedCountElement = document.getElementById('source-selected-count');
+            let selectedCount = parseInt(selectedCountElement.textContent) || 0;
+
+            // Toggle the checkbox
+            checkbox.checked = !checkbox.checked;
+
+            // Update the selected class
+            if (checkbox.checked) {
+                this.classList.add('selected');
+                selectedCount++;
+            } else {
+                this.classList.remove('selected');
+                selectedCount--;
+            }
+
+            // Update selected count
+            selectedCountElement.textContent = `${selectedCount} selected`;
+
+            // Update sync button state
+            updateSyncButtonState();
+        });
+    });
     
     // Update sync button state after setting up event listeners
     updateSyncButtonState();
